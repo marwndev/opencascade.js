@@ -1,0 +1,436 @@
+# build-configs/fluidcad_multi.yml
+#
+# FluidCAD-specific multi-threaded build config: a curated ~294-symbol subset of
+# the OCCT surface (vs. build-configs/full_multi.yml, which binds everything).
+#
+# It relies on the bindgen/filter changes on this branch's base
+# (occt-v8-emscripten-5): generic template discovery binds math_VectorBase<double>
+# (= math_Vector), and the previously-excluded surface that depends on it is
+# re-included — the GccAna_*/Geom2dGcc_* 2D tangent-constraint solvers, the
+# ProjLib projection package, and the BRepApprox/GeomInt walking-line
+# approximators. Handle<T>/NCollection instantiations are auto-discovered at
+# codegen time (and exposed under their mangled canonical names), so they are
+# not listed here.
+#
+# Build (reuses the prebuilt deps in the V8 image — see ./build-fluidcad.sh):
+#   ./build-fluidcad.sh
+# Or natively from a full checkout (downloads deps via clone-deps.sh first):
+#   ./build-wasm.sh --config multi-threaded full build-configs/fluidcad_multi.yml
+
+mainBuild:
+  name: opencascade.fluidcad.multi-threaded.js
+  bindings:
+    # ==========================================
+    # Base / Parent classes (inheritance chain)
+    # ==========================================
+    - symbol: Standard_Transient
+    - symbol: NCollection_BaseList
+    - symbol: NCollection_BaseMap
+    - symbol: NCollection_BaseSequence
+    - symbol: TopoDS_Builder
+    - symbol: BRepBuilderAPI_Command
+    - symbol: BRepBuilderAPI_MakeShape
+    - symbol: BRepBuilderAPI_ModifyShape
+    - symbol: BRepLib_Command
+    - symbol: BRepLib_MakeShape
+    - symbol: BRepPrimAPI_MakeOneAxis
+    - symbol: BRepPrimAPI_MakeSweep
+    - symbol: BRepAlgoAPI_Algo
+    - symbol: BRepAlgoAPI_BuilderAlgo
+    - symbol: BRepAlgoAPI_BooleanOperation
+    - symbol: BOPAlgo_Options
+    - symbol: BOPAlgo_Algo
+    - symbol: BOPAlgo_BuilderShape
+    - symbol: BOPAlgo_Builder
+    - symbol: BOPAlgo_ToolsProvider
+    - symbol: BOPAlgo_GlueEnum
+    - symbol: BRepFilletAPI_LocalOperation
+    - symbol: BRepOffsetAPI_MakeOffsetShape
+    - symbol: BRepOffsetAPI_MakePipeShell
+    - symbol: Adaptor2d_Curve2d
+    - symbol: Adaptor3d_Curve
+    - symbol: Adaptor3d_Surface
+    - symbol: BRepClass_FClassifier
+    - symbol: BRepClass3d_SClassifier
+    - symbol: BRepMesh_DiscretRoot
+    - symbol: GC_Root
+    - symbol: gce_Root
+    - symbol: Geom2d_Geometry
+    - symbol: Geom_BezierCurve
+    - symbol: Geom2d_Point
+    - symbol: ShapeFix_Root
+    - symbol: XSControl_Reader
+    - symbol: CDM_Application
+    - symbol: CDF_Application
+    - symbol: TDF_Attribute
+    - symbol: TDataStd_GenericEmpty
+    - symbol: Geom_Geometry
+    - symbol: Geom_Curve
+    - symbol: Geom_Conic
+    - symbol: Geom_BoundedCurve
+    - symbol: Geom_Surface
+    - symbol: Geom_ElementarySurface
+    - symbol: Geom_Plane
+    - symbol: TopAbs_ShapeEnum
+    - symbol: IntTools_Range
+    - symbol: IntTools_CommonPrt
+    - symbol: BRepFill_TypeOfContact
+    - symbol: BRepBuilderAPI_TransitionMode
+    - symbol: TopAbs_Orientation
+    - symbol: TopAbs_State
+
+    # ==========================================
+    # Directly used classes
+    # ==========================================
+
+    # Geometric Primitives
+    - symbol: gp_Pnt
+    - symbol: gp_Pnt2d
+    - symbol: gp_Vec
+    - symbol: gp_Dir
+    - symbol: gp_Ax1
+    - symbol: gp_Ax2
+    - symbol: gp_Ax3
+    - symbol: gp_Pln
+    - symbol: gp_Trsf
+    - symbol: gp_Quaternion
+    - symbol: gp_Circ
+    - symbol: gp_Elips
+    - symbol: gp_Lin
+    - symbol: gp_Circ2d
+    - symbol: gp_Elips2d
+    - symbol: gp_Lin2d
+    - symbol: gp_Cylinder
+    - symbol: gp_Cone
+    - symbol: gp_Sphere
+    - symbol: gp_Torus
+
+    # Topology
+    - symbol: TopoDS_Shape
+    - symbol: TopoDS_Solid
+    - symbol: TopoDS_Face
+    - symbol: TopoDS_Edge
+    - symbol: TopoDS_Wire
+    - symbol: TopoDS_Vertex
+    - symbol: TopoDS_Compound
+    - symbol: TopoDS_Iterator
+
+    # Topology Exploration & Enums
+    - symbol: TopExp
+    - symbol: TopExp_Explorer
+    - symbol: TopLoc_Location
+
+    # BRep Core
+    - symbol: BRep_Builder
+    - symbol: BRep_Tool
+    - symbol: BRepLib
+    - symbol: BRepTools
+    - symbol: BRepTools_WireExplorer
+
+    # BRep Builders
+    - symbol: BRepBuilderAPI_MakeEdge
+    - symbol: BRepBuilderAPI_MakeWire
+    - symbol: BRepBuilderAPI_MakeFace
+    - symbol: BRepBuilderAPI_MakeVertex
+    - symbol: BRepBuilderAPI_Transform
+    - symbol: BRepBuilderAPI_FindPlane
+    - symbol: BRepLib_MakeFace
+
+    # BRep Primitives
+    - symbol: BRepPrimAPI_MakeCylinder
+    - symbol: BRepPrimAPI_MakePrism
+    - symbol: BRepPrimAPI_MakeRevol
+    - symbol: BRepPrimAPI_MakeSphere
+
+    # BRep Boolean/Algo
+    - symbol: BRepAlgoAPI_Cut
+    - symbol: BRepAlgoAPI_Fuse
+    - symbol: BRepAlgoAPI_Common
+    - symbol: BRepAlgoAPI_Splitter
+    - symbol: BRepAlgo_NormalProjection
+    - symbol: BOPAlgo_Splitter
+    - symbol: BOPAlgo_CellsBuilder
+    - symbol: BRepOffsetAPI_MakePipe
+
+    # BRep Fillet/Chamfer/Offset
+    - symbol: BRepFilletAPI_MakeFillet
+    - symbol: BRepFilletAPI_MakeChamfer
+    - symbol: BRepOffsetAPI_MakeOffset
+    - symbol: BRepOffsetAPI_DraftAngle
+    - symbol: BRepOffsetAPI_MakeThickSolid
+    - symbol: BRepOffsetAPI_ThruSections
+
+    # BRep Analysis/Adaptor
+    - symbol: BRepAdaptor_Curve
+    - symbol: BRepAdaptor_Surface
+    - symbol: BRepAdaptor_CompCurve
+    - symbol: BRepClass_FaceClassifier
+    - symbol: BRepClass3d_SolidClassifier
+    - symbol: BRepCheck_Analyzer
+    - symbol: BRepExtrema_DistShapeShape
+    - symbol: BRepGProp
+    - symbol: BRepBndLib
+    - symbol: BRepMesh_IncrementalMesh
+
+    # Geometry Construction
+    - symbol: GC_MakeSegment
+    - symbol: GC_MakeArcOfCircle
+    - symbol: GC_MakeArcOfEllipse
+    - symbol: GC_MakeArcOfHyperbola
+    - symbol: GC_MakeArcOfParabola
+    - symbol: GC_MakeCircle
+    - symbol: GC_MakeHyperbola
+    - symbol: GC_MakeEllipse
+    - symbol: gce_MakeCylinder
+    - symbol: GeomAPI
+    - symbol: GeomLProp_SLProps
+
+    # 2D Geometry / Constraints
+    - symbol: Geom2dAdaptor_Curve
+    - symbol: Geom2dGcc_QualifiedCurve
+    - symbol: Geom2d_CartesianPoint
+    - symbol: Geom2d_Conic               # base of Geom2d_Circle (embind needs the base registered)
+    - symbol: Geom2d_Circle              # curved input for the general Geom2dGcc_* solvers (tangent-to-arc)
+    - symbol: GccEnt_QualifiedCirc
+    - symbol: GccEnt_QualifiedLin
+
+    # ------------------------------------------------------------------
+    # 2D Tangent-Constraint Solvers (Workstream A-2b — see GCCANA_PLAN.md)
+    # ------------------------------------------------------------------
+    # Recovered now that math_VectorBase<double> (= math_Vector) is bound.
+    # GccAna_* are analytic (closed-form) line/circle tangency constructions;
+    # Geom2dGcc_* are the general layer over arbitrary Geom2d curves — analytic
+    # cases delegate to GccAna_*, general/iterative cases solve via Newton using
+    # internal math_Vector-based functors (now compilable). None surface math_*
+    # in their public embind API. FluidCAD uses these for parametric sketch
+    # constraints (line/circle tangent to entities, tangent+radius/center, …).
+    - symbol: GccEnt                      # qualifier factory (Unqualified/Outside/Enclosing/…)
+    - symbol: Geom2dGcc_QCurve            # internal qualified-curve helper (Iter/Geo ctors)
+    # Analytic (closed-form)
+    - symbol: GccAna_Lin2d2Tan
+    - symbol: GccAna_Lin2dTanObl
+    - symbol: GccAna_Lin2dTanPar
+    - symbol: GccAna_Lin2dTanPer
+    - symbol: GccAna_Circ2d2TanOn
+    - symbol: GccAna_Circ2d2TanRad
+    - symbol: GccAna_Circ2d3Tan
+    - symbol: GccAna_Circ2dTanCen
+    - symbol: GccAna_Circ2dTanOnRad
+    # General (over arbitrary 2D curves); *Geo/*Iter are the analytic/iterative
+    # strategies the no-suffix solvers delegate to and expose via Results().
+    - symbol: Geom2dGcc_Lin2d2Tan
+    - symbol: Geom2dGcc_Lin2d2TanIter
+    - symbol: Geom2dGcc_Lin2dTanObl
+    - symbol: Geom2dGcc_Lin2dTanOblIter
+    - symbol: Geom2dGcc_Circ2d2TanOn
+    - symbol: Geom2dGcc_Circ2d2TanOnGeo
+    - symbol: Geom2dGcc_Circ2d2TanOnIter
+    - symbol: Geom2dGcc_Circ2d2TanRad
+    - symbol: Geom2dGcc_Circ2d2TanRadGeo
+    - symbol: Geom2dGcc_Circ2d3Tan
+    - symbol: Geom2dGcc_Circ2d3TanIter
+    - symbol: Geom2dGcc_Circ2dTanCen
+    - symbol: Geom2dGcc_Circ2dTanCenGeo
+    - symbol: Geom2dGcc_Circ2dTanOnRad
+    - symbol: Geom2dGcc_Circ2dTanOnRadGeo
+
+    # Geometry return types
+    - symbol: Geom_Circle
+    - symbol: Geom_TrimmedCurve
+
+    # Other geometry types / enums
+    - symbol: Poly_Polygon2D
+    - symbol: GeomAbs_Shape
+
+    # Shape Fix/Analysis
+    - symbol: ShapeAnalysis_FreeBounds
+    - symbol: ShapeExtend_WireData
+    - symbol: ShapeFix_Shape
+    - symbol: ShapeFix_Wire
+    - symbol: ShapeFix_Face
+    - symbol: ShapeUpgrade_UnifySameDomain
+
+    # STEP I/O
+    - symbol: STEPControl_Reader
+    - symbol: STEPControl_Writer
+    - symbol: STEPCAFControl_Reader
+    - symbol: STEPCAFControl_Writer
+
+    # STL I/O
+    - symbol: StlAPI_Writer
+
+    # XCAF (Color/Assembly)
+    - symbol: TDocStd_Application
+    - symbol: XCAFDoc_DocumentTool
+    - symbol: XCAFDoc_ShapeTool
+    - symbol: Quantity_Color
+    - symbol: TCollection_ExtendedString
+    - symbol: TDF_Label
+
+    # Meshing/Visualization
+    - symbol: Poly_Triangulation
+    - symbol: Poly_Connect
+    # Surface-based per-vertex normals from a triangulation (for Three.js smooth
+    # shading). V8 home of the old StdPrs_ToolTriangulatedShape::ComputeNormals —
+    # that utility moved from the (excluded) TKV3d/StdPrs visualization stack into
+    # modeling (TKTopAlgo/BRepLib). Uses the face surface via UV nodes; writes
+    # normals into the Poly_Triangulation (read back via .HasNormals()/.Normal(i)).
+    - symbol: BRepLib_ToolTriangulatedShape
+
+    # Misc Utilities
+    - symbol: Bnd_Box
+    - symbol: GProp_GProps
+    - symbol: Message_ProgressRange
+    - symbol: Precision
+    - symbol: ChFi2d_FilletAPI
+    - symbol: IntCurvesFace_ShapeIntersector
+    - symbol: IntTools_EdgeEdge
+    - symbol: IntTools_EdgeFace
+    - symbol: Standard_Failure
+
+    - symbol: Adaptor3d_CurveOnSurface
+    - symbol: Bnd_Box2d
+    - symbol: Bnd_OBB
+    - symbol: BRepClass3d_SolidExplorer
+    - symbol: BRepClass_Edge
+    - symbol: BRepPrim_Cylinder
+    - symbol: BRepPrim_Sphere
+    - symbol: BRepSweep_Prism
+    - symbol: BRepSweep_Revol
+    - symbol: GeomAdaptor_Curve
+    - symbol: GeomAdaptor_Surface
+    # V8 base classes of BRepAdaptor_Curve/_Surface (BRepAdaptor_Curve : public
+    # GeomAdaptor_TransformedCurve). embind can't construct a class whose base is
+    # unregistered, so without these BRepAdaptor_Curve/_Surface are present-but-
+    # unconstructable ("due to unbound types"). FluidCAD GAP 1 — see
+    # FLUIDCAD_BINDING_FIXES.md. Bases (Adaptor3d_Curve/Surface) already linked.
+    - symbol: GeomAdaptor_TransformedCurve
+    - symbol: GeomAdaptor_TransformedSurface
+    - symbol: gp_Ax22d
+    - symbol: gp_Ax2d
+    - symbol: gp_Dir2d
+    - symbol: gp_Hypr
+    - symbol: gp_Hypr2d
+    - symbol: gp_Mat
+    - symbol: gp_Parab
+    - symbol: gp_Parab2d
+    - symbol: GProp_PrincipalProps
+    - symbol: gp_Trsf2d
+    - symbol: gp_Vec2d
+    - symbol: gp_XY
+    - symbol: gp_XYZ
+    - symbol: IMeshTools_Parameters
+    - symbol: Message_Msg
+    - symbol: Poly_ArrayOfNodes
+    - symbol: Poly_ArrayOfUVNodes
+    - symbol: Poly_Triangle
+    - symbol: ShapeAnalysis_WireOrder
+    - symbol: Standard_GUID
+    - symbol: STEPConstruct_Tool
+    - symbol: TDF_IDFilter
+    - symbol: TDocStd_Document
+    - symbol: TopoDS_CompSolid
+    - symbol: TopoDS_Shell
+    - symbol: GeomAbs_JoinType
+    - symbol: Quantity_TypeOfColor
+    - symbol: STEPControl_StepModelType
+    - symbol: IFSelect_ReturnStatus
+    - symbol: XCAFDoc_ColorType
+    - symbol: ChFi3d_FilletShape
+    - symbol: GeomAbs_SurfaceType
+    - symbol: GeomAbs_CurveType
+    - symbol: Extrema_ExtFlag
+    - symbol: GccEnt_Position
+    - symbol: Extrema_ExtAlgo
+    - symbol: BRepOffset_Mode
+    - symbol: CDM_Document
+    - symbol: XCAFDoc_ClippingPlaneTool
+    - symbol: XCAFDoc_ColorTool
+    - symbol: XCAFDoc_DimTolTool
+    - symbol: XCAFDoc_GraphNode
+    - symbol: XCAFDoc_LayerTool
+    - symbol: XCAFDoc_MaterialTool
+    - symbol: XCAFDoc_NotesTool
+    - symbol: XCAFDoc_ViewTool
+    - symbol: XCAFDoc_VisMaterialTool
+    - symbol: XSControl_WorkSession
+    - symbol: Law_Function
+    - symbol: Poly_PolygonOnTriangulation
+    - symbol: Poly_Polygon3D
+    - symbol: BRepTools_History
+    - symbol: Geom2d_Curve
+    - symbol: Geom_CylindricalSurface
+    - symbol: Geom_ConicalSurface
+    - symbol: Geom2d_Line
+
+    - symbol: IntTools_Context
+    - symbol: BRepAlgoAPI_Section
+    - symbol: IntTools_FaceFace
+
+    # ==========================================
+    # Multi-threading control (V8 addition)
+    # ==========================================
+    # Idiomatic V3 thread-pool control surface (replaces the old build's
+    # emscripten-runtime PThread pool management). Lets callers do
+    # `oc.OSD_ThreadPool.DefaultPool(-1)` per the fork's MT quickstart.
+    - symbol: OSD_ThreadPool
+    - symbol: OSD_ThreadPool_Launcher
+
+    # ==========================================
+    # Numeric geometry (Workstream A — TKMath)
+    # ==========================================
+    # math_VectorBase<double> == math_Vector (surfaced as oc.math_Vector via the
+    # alias wrapper), plus math_Matrix + math_Gauss for linear algebra /
+    # least-squares. Requires the from-source fork-patches build (see build.sh):
+    # generic template discovery + the self-type-param codegen fix are NOT in the
+    # stock image, so a plain `link` cannot resolve these symbols.
+    - symbol: math_VectorBase_double
+    - symbol: math_Matrix
+    - symbol: math_Gauss
+
+    # ==========================================
+    # Projection (ProjLib — Workstream A-2c)
+    # ==========================================
+    # Project points/curves onto surfaces -> 2D parametric geometry (pcurves,
+    # sketching on faces). Excluded in the first V8 cut for wasm-size only; the
+    # ProjLib_* workers always compiled. See PROJLIB_PLAN.md.
+    # Tier 1 — analytic (closed-form, no Approx machinery):
+    - symbol: ProjLib                  # ProjLib::Project(Pln/Cylinder/Cone/Sphere/Torus, pnt|lin|circ|…)
+    - symbol: ProjLib_Projector        # base of the analytic projectors
+    - symbol: ProjLib_Plane
+    - symbol: ProjLib_Cylinder
+    - symbol: ProjLib_Cone
+    - symbol: ProjLib_Sphere
+    - symbol: ProjLib_Torus
+    - symbol: ProjLib_ProjectOnPlane
+    - symbol: ProjLib_ProjectOnSurface
+    # Tier 2 — general curve -> surface -> 2D pcurve (pulls the Approx machinery):
+    - symbol: ProjLib_ProjectedCurve
+    - symbol: AppParCurves_Constraint  # enum (ProjectedCurve.SetBndPnt)
+    - symbol: Geom2d_BoundedCurve      # base of the pcurve result types
+    - symbol: Geom2d_BSplineCurve      # ProjLib_ProjectedCurve.BSpline() result
+    - symbol: Geom2d_BezierCurve       # ProjLib_ProjectedCurve.Bezier() result
+  emccFlags:
+    - -fwasm-exceptions
+    - -sEXPORT_EXCEPTION_HANDLING_HELPERS
+    - -sEXPORT_ES6=1
+    - -sMODULARIZE
+    - -sALLOW_MEMORY_GROWTH=1
+    - -sEXPORTED_RUNTIME_METHODS=["FS","PThread"]
+    - -sINITIAL_MEMORY=128MB
+    - -sMAXIMUM_MEMORY=4GB
+    - -sUSE_FREETYPE=1
+    - -sERROR_ON_UNDEFINED_SYMBOLS=0
+    - --no-entry
+    - -Wl,--allow-undefined
+    - --emit-symbol-map
+    - -sSTACK_SIZE=8388608
+    - -sWASM_BIGINT
+    - -msimd128
+    - -O3
+    # ── Multi-threading additions (delta from the single-threaded full build) ──
+    - -pthread
+    - -sUSE_PTHREADS=1
+    - -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency
+    - -sSHARED_MEMORY=1
+    - -sENVIRONMENT=web,worker,node
