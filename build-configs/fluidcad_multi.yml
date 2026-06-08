@@ -1,6 +1,6 @@
 # build-configs/fluidcad_multi.yml
 #
-# FluidCAD-specific multi-threaded build config: a curated ~294-symbol subset of
+# FluidCAD-specific multi-threaded build config: a curated ~302-symbol subset of
 # the OCCT surface (vs. build-configs/full_multi.yml, which binds everything).
 #
 # It relies on the bindgen/filter changes on this branch's base
@@ -410,6 +410,39 @@ mainBuild:
     - symbol: Geom2d_BoundedCurve      # base of the pcurve result types
     - symbol: Geom2d_BSplineCurve      # ProjLib_ProjectedCurve.BSpline() result
     - symbol: Geom2d_BezierCurve       # ProjLib_ProjectedCurve.Bezier() result
+
+    # ==========================================
+    # Helix construction (TKHelix — new in OCCT V8)
+    # ==========================================
+    # V8 added the TKHelix toolkit for parametric helix / spiral construction
+    # (threads, springs, coils). Two layers, both wanted:
+    #   * HelixBRep_BuilderHelix — top level: a gp_Ax3 + arrays of diameters /
+    #     heights / pitches (or turns) -> a TopoDS_Shape helix wire, ready to be
+    #     swept along (BRepOffsetAPI_MakePipe/Shell) for a thread or spring.
+    #   * HelixGeom_* — the geometry layer: build the helix as Geom curves
+    #     (HelixGeom_BuilderHelix on an arbitrary gp_Ax2, HelixGeom_BuilderHelixCoil
+    #     on OZ; results read back via the base's Curves() as Handle(Geom_Curve)),
+    #     HelixGeom_HelixCurve is the analytic Adaptor3d_Curve, and HelixGeom_Tools
+    #     approximates a helix as a Geom_BSplineCurve.
+    # libTKHelix.a is already linked (filterPackages admits it); listing these
+    # symbols pulls the needed objects in and emits the embind glue. Every public
+    # dependency is already bound — gp_Ax2/gp_Ax3, GeomAbs_Shape, TopoDS_Shape,
+    # gp_Pnt/gp_Vec, Geom_Curve, Adaptor3d_Curve — and the container instantiations
+    # (NCollection_Array1<double|bool>, NCollection_Sequence<Handle(Geom_Curve)>)
+    # are auto-discovered. The lone gap is Geom_BSplineCurve (HelixGeom_Tools'
+    # result type; its base Geom_BoundedCurve is already present). The one method
+    # embind can't take, HelixGeom_BuilderApproxCurve::ApproxParameters (enum by
+    # non-const ref), is already dropped in bindgen-filters.yaml.
+    - symbol: Geom_BSplineCurve        # HelixGeom_Tools result type (3D B-spline)
+    # Curve layer — bases first (ApproxCurve -> HelixGen -> concrete builders):
+    - symbol: HelixGeom_BuilderApproxCurve   # abstract base (Curves()/tolerance/status)
+    - symbol: HelixGeom_BuilderHelixGen      # base: helix curve parameters
+    - symbol: HelixGeom_BuilderHelix         # concrete: helix on an arbitrary gp_Ax2
+    - symbol: HelixGeom_BuilderHelixCoil     # concrete: single coil on axis OZ
+    - symbol: HelixGeom_HelixCurve           # analytic helix Adaptor3d_Curve
+    - symbol: HelixGeom_Tools                # static helix -> Geom_BSplineCurve approx
+    # Wire layer — primary entry point for FluidCAD:
+    - symbol: HelixBRep_BuilderHelix         # axis + params -> TopoDS_Shape helix wire
   emccFlags:
     - -fwasm-exceptions
     - -sEXPORT_EXCEPTION_HANDLING_HELPERS
