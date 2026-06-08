@@ -65,3 +65,5 @@ docs-site/data/api-search-index.json
 /tests/docker/.work/
 /tests/docker/.trial/
 .vercel
+
+fluidcad-dist/
