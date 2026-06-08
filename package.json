@@ -1,5 +1,5 @@
 {
-  "name": "@taucad/opencascade.js",
+  "name": "fluidcad-ocjs",
   "version": "3.0.0-beta.2",
   "description": "Port of the OpenCascade CAD library to JavaScript and WebAssembly via Emscripten.",
   "keywords": [
@@ -30,16 +30,10 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/opencascade_full.d.ts",
-      "default": "./dist/opencascade_full.js"
+      "types": "./fluidcad-dist/index.d.ts",
+      "import": "./fluidcad-dist/index.js"
     },
-    "./wasm": "./dist/opencascade_full.wasm",
-    "./multi": {
-      "types": "./dist/opencascade_full_multi.d.ts",
-      "default": "./dist/opencascade_full_multi.js"
-    },
-    "./multi/wasm": "./dist/opencascade_full_multi.wasm",
-    "./package.json": "./package.json"
+    "./wasm": "./fluidcad-dist/opencascade.fluidcad.multi-threaded.wasm"
   },
   "files": [
     "dist/opencascade_full.js",
