@@ -53,6 +53,7 @@ mainBuild:
     - symbol: BRepClass_FClassifier
     - symbol: BRepClass3d_SClassifier
     - symbol: BRepMesh_DiscretRoot
+    - symbol: BRepBuilderAPI_PipeError
     - symbol: GC_Root
     - symbol: gce_Root
     - symbol: Geom2d_Geometry
@@ -443,6 +444,17 @@ mainBuild:
     - symbol: HelixGeom_Tools                # static helix -> Geom_BSplineCurve approx
     # Wire layer — primary entry point for FluidCAD:
     - symbol: HelixBRep_BuilderHelix         # axis + params -> TopoDS_Shape helix wire
+    - symbol: GCPnts_AbscissaPoint
+    - symbol: Geom2dAPI_PointsToBSpline
+    - symbol: Geom2dAPI_Interpolate
+    - symbol: Geom_BoundedSurface      # base of Geom_BSplineSurface
+    - symbol: Geom_BSplineSurface      # pole/knot surgery on loft side faces
+    - symbol: GeomConvert              # analytic -> B-spline fallback
+    - symbol: GeomConvert_CurveToAnaCurve  # B-spline -> analytic recognition (projected sketch references)
+    - symbol: GeomConvert_ConvType         # its conversion-mode enum
+    - symbol: BRepBuilderAPI_Sewing    # restitch side faces with the caps
+    - symbol: Geom_RectangularTrimmedSurface
+
   emccFlags:
     - -fwasm-exceptions
     - -sEXPORT_EXCEPTION_HANDLING_HELPERS
