@@ -65,6 +65,8 @@ mainBuild:
     - symbol: CDF_Application
     - symbol: TDF_Attribute
     - symbol: TDataStd_GenericEmpty
+    - symbol: TDataStd_GenericExtString  # base of TDataStd_Name in OCCT V8; owns Get() (without it Name re-parents onto TDF_Attribute and loses Get)
+    - symbol: TDataStd_Name              # XCAF STEP writer: name shape labels (static Set(label, extstring) / Get / GetID)
     - symbol: Geom_Geometry
     - symbol: Geom_Curve
     - symbol: Geom_Conic
@@ -411,6 +413,13 @@ mainBuild:
     - symbol: Geom2d_BoundedCurve      # base of the pcurve result types
     - symbol: Geom2d_BSplineCurve      # ProjLib_ProjectedCurve.BSpline() result
     - symbol: Geom2d_BezierCurve       # ProjLib_ProjectedCurve.Bezier() result
+    # Edge pcurve types met when re-attaching pcurves for STEP export (BRep_Builder.UpdateEdge
+    # rejects a Geom2d_Curve.Copy() result whose concrete class is not linked):
+    - symbol: Geom2d_TrimmedCurve      # revolved-cone seam pcurves (extends Geom2d_BoundedCurve)
+    - symbol: Geom2d_OffsetCurve       # offset pcurves (extends Geom2d_Curve)
+    - symbol: Geom2d_Ellipse           # conic pcurves (extends Geom2d_Conic)
+    - symbol: Geom2d_Hyperbola         # conic pcurves (extends Geom2d_Conic)
+    - symbol: Geom2d_Parabola          # conic pcurves (extends Geom2d_Conic)
 
     # ==========================================
     # Helix construction (TKHelix — new in OCCT V8)
