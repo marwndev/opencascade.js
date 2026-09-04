@@ -1,7 +1,7 @@
 {
-  "name": "fluidcad-ocjs",
-  "version": "3.0.0-beta.2",
-  "description": "Port of the OpenCascade CAD library to JavaScript and WebAssembly via Emscripten.",
+  "name": "ocjs-fluidcad",
+  "version": "1.2.0",
+  "description": "Custom build of OC.js for FluidCAD",
   "keywords": [
     "opencascade",
     "occt",
@@ -14,44 +14,31 @@
     "geometry",
     "3d"
   ],
-  "homepage": "https://github.com/taucad/opencascade.js#readme",
-  "bugs": {
-    "url": "https://github.com/taucad/opencascade.js/issues"
-  },
+  "homepage": "https://github.com/Fluid-CAD/FluidCAD",
   "license": "LGPL-2.1-only WITH Open-CASCADE-Exception-1.0",
-  "author": "Richard Fontein <32132657+rifont@users.noreply.github.com>",
+  "author": "Marwan Aouida",
   "contributors": [
     "Sebastian Alff <donalffons@gmail.com>"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/taucad/opencascade.js.git"
-  },
   "type": "module",
   "exports": {
     ".": {
-      "types": "./fluidcad-dist/index.d.ts",
-      "import": "./fluidcad-dist/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
-    "./wasm": "./fluidcad-dist/opencascade.fluidcad.multi-threaded.wasm"
+    "./wasm": "./dist/opencascade.fluidcad.multi-threaded.wasm"
   },
   "files": [
-    "dist/opencascade_full.js",
-    "dist/opencascade_full.wasm",
-    "dist/opencascade_full.d.ts",
-    "dist/opencascade_full.js.symbols",
-    "dist/opencascade_full.build-manifest.json",
-    "dist/opencascade_full.provenance.json",
-    "dist/opencascade_full_multi.js",
-    "dist/opencascade_full_multi.wasm",
-    "dist/opencascade_full_multi.d.ts",
-    "dist/opencascade_full_multi.js.symbols",
-    "dist/opencascade_full_multi.build-manifest.json",
-    "dist/opencascade_full_multi.provenance.json",
-    "CHANGELOG.md",
-    "BREAKING_CHANGES.md",
-    "LICENSE",
-    "LICENSE.OCCT-Exception"
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/aliases.generated.js",
+    "dist/aliases.generated.json",
+    "dist/opencascade.fluidcad.multi-threaded.js",
+    "dist/opencascade.fluidcad.multi-threaded.wasm",
+    "dist/opencascade.fluidcad.multi-threaded.d.ts",
+    "dist/opencascade.fluidcad.multi-threaded.js.symbols",
+    "dist/opencascade.fluidcad.multi-threaded.build-manifest.json",
+    "dist/opencascade.fluidcad.multi-threaded.provenance.json"
   ],
   "engines": {
     "node": ">=22"

@@ -6,15 +6,15 @@ set -euo pipefail
 # you don't need ./clone-deps.sh. It mounts this branch's bindgen sources over
 # the image and runs generate -> compile-bindings -> link for
 # build-configs/fluidcad_multi.yml, then bakes the deprecated-OCCT-name aliases
-# and assembles a complete, npm-linkable package in ./fluidcad-dist/.
+# and assembles a complete, npm-linkable package in ./dist/.
 #
-# Output package (fluidcad-dist/) — matches package.json `exports`:
+# Output package (dist/) — matches package.json `exports`:
 #   index.js / index.d.ts                          (entry: applies aliases at runtime)
 #   aliases.generated.js / .json                   (deprecated -> canonical map)
 #   opencascade.fluidcad.multi-threaded.{js,wasm,d.ts}   (raw module; d.ts alias-baked)
 #
 # Usage:
-#   ./build-fluidcad.sh                 # outputs to ./fluidcad-dist/
+#   ./build-fluidcad.sh                 # outputs to ./dist/
 #   OUT=/path ./build-fluidcad.sh  CPUS=8 ./build-fluidcad.sh  IMAGE=… ./build-fluidcad.sh
 #
 # Native alternative (downloads deps, no Docker mounts; does NOT alias/package):
@@ -24,7 +24,7 @@ cd "$(dirname "$0")"
 
 IMAGE="${IMAGE:-ghcr.io/taucad/opencascade.js:multi-threaded-branch-occt-v8-emscripten-5}"
 YML="build-configs/fluidcad_multi.yml"
-OUT="${OUT:-$(pwd)/fluidcad-dist}"
+OUT="${OUT:-$(pwd)/dist}"
 CPUS="${CPUS:-$(nproc 2>/dev/null || echo 8)}"
 
 [ -f "$YML" ] || { echo "Error: $YML not found (are you on the fluidcad branch?)" >&2; exit 1; }
