@@ -463,6 +463,7 @@ mainBuild:
     - symbol: GeomConvert_ConvType         # its conversion-mode enum
     - symbol: BRepBuilderAPI_Sewing    # restitch side faces with the caps
     - symbol: Geom_RectangularTrimmedSurface
+    - symbol: BRep_ToolExt            # hand-written wrapper, see additionalCppCode below
 
   emccFlags:
     - -fwasm-exceptions
@@ -488,3 +489,28 @@ mainBuild:
     - -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency
     - -sSHARED_MEMORY=1
     - -sENVIRONMENT=web,worker,node
+
+# Hand-written wrappers for OCCT overloads the generator cannot bind. Plain C++
+# classes here get their Embind registration AND .d.ts declarations generated
+# by the same pipeline as OCCT classes (out-params become result-object fields).
+# Each class must ALSO be listed under mainBuild.bindings — the link and .d.ts
+# stages select objects/fragments by that symbol list.
+additionalCppCode: |
+  #include <BRep_Tool.hxx>
+  #include <TopoDS_Edge.hxx>
+  #include <TopoDS_Face.hxx>
+  #include <Geom2d_Curve.hxx>
+
+  // BRep_Tool::CurveOnSurface(E, F, First, Last, Standard_Boolean* theIsStored)
+  // carries a raw-pointer parameter, so the generator drops the face-form
+  // overload (only the index-based one is bound). The face form is the one
+  // that computes a pcurve on the fly for planar faces (which store none),
+  // so FluidCAD's edge-on-face evaluations (normals at an edge, convexity)
+  // need it. Exposed as BRep_ToolExt.CurveOnFace(E, F) -> { returnValue, First, Last }.
+  class BRep_ToolExt {
+  public:
+    static Handle(Geom2d_Curve) CurveOnFace(const TopoDS_Edge& E, const TopoDS_Face& F,
+                                            Standard_Real& First, Standard_Real& Last) {
+      return BRep_Tool::CurveOnSurface(E, F, First, Last);
+    }
+  };
