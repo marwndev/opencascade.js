@@ -252,6 +252,8 @@ mainBuild:
     - symbol: ShapeFix_Wire
     - symbol: ShapeFix_Face
     - symbol: ShapeUpgrade_UnifySameDomain
+    - symbol: ShapeCustom               # DirectFaces: rebuild indirect (left-handed) elementary surfaces
+    - symbol: BRepTools_Modifier        # rebuild history for ShapeCustomExt.DirectFaces (ModifiedShape)
 
     # STEP I/O
     - symbol: STEPControl_Reader
@@ -464,6 +466,7 @@ mainBuild:
     - symbol: BRepBuilderAPI_Sewing    # restitch side faces with the caps
     - symbol: Geom_RectangularTrimmedSurface
     - symbol: BRep_ToolExt            # hand-written wrapper, see additionalCppCode below
+    - symbol: ShapeCustomExt          # hand-written wrapper, see additionalCppCode below
 
   emccFlags:
     - -fwasm-exceptions
@@ -500,6 +503,13 @@ additionalCppCode: |
   #include <TopoDS_Edge.hxx>
   #include <TopoDS_Face.hxx>
   #include <Geom2d_Curve.hxx>
+  #include <TopoDS_Shape.hxx>
+  #include <BRepTools_Modifier.hxx>
+  #include <BRepTools_Modification.hxx>
+  #include <ShapeCustom.hxx>
+  #include <ShapeCustom_DirectModification.hxx>
+  #include <NCollection_DataMap.hxx>
+  #include <TopTools_ShapeMapHasher.hxx>
 
   // BRep_Tool::CurveOnSurface(E, F, First, Last, Standard_Boolean* theIsStored)
   // carries a raw-pointer parameter, so the generator drops the face-form
@@ -512,5 +522,23 @@ additionalCppCode: |
     static Handle(Geom2d_Curve) CurveOnFace(const TopoDS_Edge& E, const TopoDS_Face& F,
                                             Standard_Real& First, Standard_Real& Last) {
       return BRep_Tool::CurveOnSurface(E, F, First, Last);
+    }
+  };
+
+  // ShapeCustom::DirectFaces(S) rebuilds every face lying on an indirect
+  // (left-handed) elementary surface onto its direct twin, but throws away the
+  // BRepTools_Modifier it ran, so a caller tracking sub-shapes (an extruder's
+  // start/end faces) cannot follow them into the result. ShapeCustom::
+  // ApplyModifier exposes the modifier, but takes a Handle(BRepTools_Modification)
+  // and an NCollection_DataMap the generator does not bind. Exposed as
+  // ShapeCustomExt.DirectFaces(S, modifier): the caller's BRepTools_Modifier is
+  // filled in place, and modifier.ModifiedShape(old) then yields each rebuilt
+  // face / edge / vertex (or `old` itself when it was untouched).
+  class ShapeCustomExt {
+  public:
+    static TopoDS_Shape DirectFaces(const TopoDS_Shape& S, BRepTools_Modifier& MD) {
+      Handle(ShapeCustom_DirectModification) DM = new ShapeCustom_DirectModification();
+      NCollection_DataMap<TopoDS_Shape, TopoDS_Shape, TopTools_ShapeMapHasher> context;
+      return ShapeCustom::ApplyModifier(S, DM, context, MD);
     }
   };
