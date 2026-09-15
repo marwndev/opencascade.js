@@ -254,6 +254,19 @@ mainBuild:
     - symbol: ShapeUpgrade_UnifySameDomain
     - symbol: ShapeCustom               # DirectFaces: rebuild indirect (left-handed) elementary surfaces
     - symbol: BRepTools_Modifier        # rebuild history for ShapeCustomExt.DirectFaces (ModifiedShape)
+    # Hidden-line-removal front end, used WITHOUT Hide(): sketch projection asks
+    # HLRBRep_Algo for a face's outline (silhouette) edges against the sketch
+    # normal — Update() runs the apparent-contour pass and splits the face
+    # along it, ShowAll() marks everything visible, HLRToShape hands back the
+    # outline compound in the projector frame (HLRBRep_InternalAlgo is the
+    # base carrying Projector/Update/ShowAll; HLRTopoBRep_OutLiner is the
+    # handle type Load() takes).
+    - symbol: HLRAlgo_Projector
+    - symbol: HLRBRep_InternalAlgo
+    - symbol: HLRBRep_Algo
+    - symbol: HLRBRep_HLRToShape
+    - symbol: HLRBRep_TypeOfResultingEdge
+    - symbol: HLRTopoBRep_OutLiner
 
     # STEP I/O
     - symbol: STEPControl_Reader
