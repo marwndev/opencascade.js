@@ -170,6 +170,14 @@ mainBuild:
     - symbol: BRepClass_FaceClassifier
     - symbol: BRepClass3d_SolidClassifier
     - symbol: BRepCheck_Analyzer
+    # Native boolean argument / self-interference checks and diagnostic results.
+    - symbol: BRepAlgoAPI_Check
+    - symbol: BOPAlgo_ArgumentAnalyzer
+    - symbol: BOPAlgo_CheckResult
+    - symbol: BOPAlgo_CheckStatus
+    - symbol: BOPAlgo_Operation
+    # OCCT exposes analyzer modes as mutable C++ references; JS needs setters.
+    - symbol: BOPAlgo_ArgumentAnalyzerExt
     - symbol: BRepExtrema_DistShapeShape
     - symbol: BRepGProp
     - symbol: BRepBndLib
@@ -474,6 +482,19 @@ mainBuild:
     - symbol: Geom_BoundedSurface      # base of Geom_BSplineSurface
     - symbol: Geom_BSplineSurface      # pole/knot surgery on loft side faces
     - symbol: GeomConvert              # analytic -> B-spline fallback
+    # Swept-wall support composition and non-destructive topology history.
+    # Array2<Handle(Geom_BezierSurface)> and HArray2<gp_Pnt> are discovered
+    # from these algorithm signatures by the existing container generator.
+    - symbol: Geom_BezierSurface
+    - symbol: GeomConvert_BSplineSurfaceToBezierSurface
+    - symbol: GeomConvert_CompBezierSurfacesToBSplineSurface
+    - symbol: BRepBuilderAPI_Copy
+    - symbol: BRepTools_ReShape
+    # Native continuity subdivision for bounded boolean working faces.
+    - symbol: ShapeBuild_ReShape
+    - symbol: ShapeUpgrade_ShapeDivide
+    - symbol: ShapeUpgrade_ShapeDivideContinuity
+    - symbol: FluidCAD_Array2Access  # exact native point-grid getter omitted by template bindgen
     - symbol: GeomConvert_CurveToAnaCurve  # B-spline -> analytic recognition (projected sketch references)
     - symbol: GeomConvert_ConvType         # its conversion-mode enum
     - symbol: BRepBuilderAPI_Sewing    # restitch side faces with the caps
@@ -513,6 +534,7 @@ mainBuild:
 # stages select objects/fragments by that symbol list.
 additionalCppCode: |
   #include <BRep_Tool.hxx>
+  #include <BOPAlgo_ArgumentAnalyzer.hxx>
   #include <TopoDS_Edge.hxx>
   #include <TopoDS_Face.hxx>
   #include <Geom2d_Curve.hxx>
@@ -553,5 +575,53 @@ additionalCppCode: |
       Handle(ShapeCustom_DirectModification) DM = new ShapeCustom_DirectModification();
       NCollection_DataMap<TopoDS_Shape, TopoDS_Shape, TopTools_ShapeMapHasher> context;
       return ShapeCustom::ApplyModifier(S, DM, context, MD);
+    }
+  };
+
+  // Preserve the native analyzer API while making its reference-valued modes
+  // writable from JS. Without these setters a default analyzer runs no tests.
+  class BOPAlgo_ArgumentAnalyzerExt {
+  public:
+    static void SetOperationType(BOPAlgo_ArgumentAnalyzer& analyzer, BOPAlgo_Operation operation) {
+      analyzer.OperationType() = operation;
+    }
+    static void SetStopOnFirstFaulty(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.StopOnFirstFaulty() = enabled;
+    }
+    static void SetArgumentTypeMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.ArgumentTypeMode() = enabled;
+    }
+    static void SetSelfInterMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.SelfInterMode() = enabled;
+    }
+    static void SetSmallEdgeMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.SmallEdgeMode() = enabled;
+    }
+    static void SetRebuildFaceMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.RebuildFaceMode() = enabled;
+    }
+    static void SetTangentMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.TangentMode() = enabled;
+    }
+    static void SetMergeVertexMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.MergeVertexMode() = enabled;
+    }
+    static void SetMergeEdgeMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.MergeEdgeMode() = enabled;
+    }
+    static void SetContinuityMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.ContinuityMode() = enabled;
+    }
+    static void SetCurveOnSurfaceMode(BOPAlgo_ArgumentAnalyzer& analyzer, bool enabled) {
+      analyzer.CurveOnSurfaceMode() = enabled;
+    }
+  };
+
+  // NCollection_Array2's dependent Value return type is omitted by bindgen.
+  // Bind the exact native accessor; no geometry is constructed or approximated.
+  class FluidCAD_Array2Access {
+  public:
+    static gp_Pnt PointValue(const NCollection_Array2<gp_Pnt>& array, int row, int col) {
+      return array.Value(row, col);
     }
   };

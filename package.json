@@ -49,11 +49,13 @@
   "scripts": {
     "test": "vitest run tests/smoke/",
     "test:smoke": "vitest run tests/smoke/",
+    "test:fluidcad-checks": "node scripts/check-fluidcad-self-interference.mjs && tsc --noEmit --skipLibCheck --module NodeNext --target ES2022 scripts/check-fluidcad-self-interference.types.ts",
     "test:regression": "vitest run tests/regression/",
     "test:docker": "vitest run --config vitest.docker.config.ts",
     "typecheck": "tsc --project tests/tsconfig.json",
     "lint": "eslint --config eslint.config.mjs tests",
-    "lint:fix": "eslint --config eslint.config.mjs --fix tests"
+    "lint:fix": "eslint --config eslint.config.mjs --fix tests",
+    "test:fluidcad-sweep-topology": "node scripts/check-fluidcad-sweep-topology.mjs && tsc --noEmit --skipLibCheck --module NodeNext --target ES2022 scripts/check-fluidcad-sweep-topology.types.ts"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.3.0",
