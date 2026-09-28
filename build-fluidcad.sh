@@ -37,7 +37,16 @@ mkdir -p "$OUT"
 EMBIND="$(mktemp)"
 cp src/vendor/pristine-libembind.js "$EMBIND"
 patch -s "$EMBIND" < src/patches/libembind-overloading.patch
-trap 'rm -f "$EMBIND"' EXIT
+
+# pthread workers skip Embind initialization (src/patches/pthread-worker-no-embind.patch):
+# they only run OCCT's OSD_ThreadPool jobs, and a per-worker copy of the registry
+# costs each worker tens of MB. Unlike libembind it is swapped in inside the
+# container, after checking the image still ships the pristine it was cut against.
+PTHREAD_RT="$(mktemp)"
+cp src/vendor/pristine-runtime_pthread.js "$PTHREAD_RT"
+patch -s "$PTHREAD_RT" < src/patches/pthread-worker-no-embind.patch
+PTHREAD_RT_SHA="$(cat src/vendor/pristine-runtime_pthread.expected.sha256)"
+trap 'rm -f "$EMBIND" "$PTHREAD_RT"' EXIT
 
 echo "=== Image:  $IMAGE"
 echo "=== Config: $YML ($(grep -c 'symbol:' "$YML") symbols)  ->  $OUT"
@@ -55,9 +64,13 @@ docker run --rm \
   -v "$(pwd)/$YML:/opencascade.js/$YML:ro" \
   -v "$(pwd)/fluidcad-pkg:/pkg:ro" \
   -v "$EMBIND:/emsdk/upstream/emscripten/src/lib/libembind.js:ro" \
+  -v "$PTHREAD_RT:/patched/runtime_pthread.js:ro" \
   --entrypoint bash \
   "$IMAGE" -c "
     set -e
+    echo '$PTHREAD_RT_SHA  /emsdk/upstream/emscripten/src/runtime_pthread.js' | sha256sum -c --quiet \
+      || { echo 'Error: the image runtime_pthread.js is not the pristine src/patches/pthread-worker-no-embind.patch was cut against' >&2; exit 1; }
+    cp /patched/runtime_pthread.js /emsdk/upstream/emscripten/src/runtime_pthread.js
     cd /opencascade.js
     ./build-wasm.sh --config multi-threaded generate bindings link '$YML'
 

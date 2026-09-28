@@ -523,7 +523,10 @@ mainBuild:
     # ── Multi-threading additions (delta from the single-threaded full build) ──
     - -pthread
     - -sUSE_PTHREADS=1
-    - -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency
+    # Workers pre-spawned at init: the `pthreadPoolSize` init option when given,
+    # else one per logical CPU. Emitted verbatim into PThread.initMainThread, where
+    # `Module` is the options object passed to init(); quoted so Closure keeps the key.
+    - "-sPTHREAD_POOL_SIZE=Module['pthreadPoolSize']??navigator.hardwareConcurrency"
     - -sSHARED_MEMORY=1
     - -sENVIRONMENT=web,worker,node
 

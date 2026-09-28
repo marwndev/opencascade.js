@@ -1,0 +1,22 @@
+--- src/runtime_pthread.js
++++ src/runtime_pthread.js
+@@ -150,14 +150,11 @@
+         __emscripten_thread_mailbox_await(msgData.pthread_ptr);
+ 
+         if (!initializedJS) {
+-#if EMBIND
+-#if PTHREADS_DEBUG
+-          dbg(`worker: Pthread 0x${_pthread_self().toString(16)} initializing embind.`);
+-#endif
+-          // Embind must initialize itself on all threads, as it generates support JS.
+-          // We only do this once per worker since they get reused
+-          __embind_initialize_bindings();
+-#endif // EMBIND
++          // ocjs-fluidcad: Embind is deliberately NOT initialized on pthread
++          // workers. They only run OCCT's own parallel jobs (OSD_ThreadPool),
++          // which never call into JS, while rebuilding the registry of every
++          // bound class costs each worker tens of MB of heap. Main-thread
++          // Embind is untouched.
+           initializedJS = true;
+         }
+ 
