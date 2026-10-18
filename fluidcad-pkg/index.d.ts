@@ -13,9 +13,22 @@ import type { OpenCascadeInstance } from "./opencascade.fluidcad.multi-threaded.
 // deprecated-name `export type` aliases, FS, OCJS, … (everything but `init`).
 export * from "./opencascade.fluidcad.multi-threaded.js";
 
+/** Options for {@link init}: Emscripten Module overrides plus the worker pool size. */
+export interface InitOptions extends Record<string, unknown> {
+  /**
+   * pthread workers to pre-spawn for OCCT's parallel algorithms (booleans, meshing).
+   * Defaults to one per logical CPU. When set (>= 1), OCCT's default thread pool is
+   * capped at the same count, so OCCT never asks for more threads than the pool holds.
+   * `OSD_ThreadPool.DefaultPool().Init(n)` changes OCCT's count later. The pre-spawned
+   * workers stay for the life of the instance; raising the count past them spawns more
+   * on demand under Node, but can deadlock a browser.
+   */
+  pthreadPoolSize?: number;
+}
+
 /**
  * Initialize the multi-threaded OCCT V8 module. The returned instance exposes the
  * canonical (mangled) classes AND the restored deprecated OCCT names.
- * @param options Emscripten Module overrides (e.g. `locateFile`).
+ * @param options Emscripten Module overrides (e.g. `locateFile`) and `pthreadPoolSize`.
  */
-export default function init(options?: Record<string, unknown>): Promise<OpenCascadeInstance>;
+export default function init(options?: InitOptions): Promise<OpenCascadeInstance>;
