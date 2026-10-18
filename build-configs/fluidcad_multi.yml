@@ -542,6 +542,13 @@ mainBuild:
     - symbol: Geom2dAPI_ProjectPointOnCurve
     - symbol: GeomAPI_ExtremaCurveCurve
 
+  # Out-of-memory guard: OCCT's `Standard::AllocateOptimal` / `AllocateAligned`
+  # return NULL unchecked when the wasm heap is exhausted; the `__wrap_`
+  # definitions in this file (see its header for the full rationale) throw
+  # `Standard_OutOfMemory` instead. Wired in by the `-Wl,--wrap=` flags below.
+  additionalBindFiles:
+    - fluidcad/oom-guard.cpp
+
   emccFlags:
     - -fwasm-exceptions
     - -sEXPORT_ES6=1
@@ -553,7 +560,13 @@ mainBuild:
     # decode caught WebAssembly.Exception values with getExceptionMessage).
     - -sEXPORTED_RUNTIME_METHODS=["FS","PThread","wasmMemory","getExceptionMessage","incrementExceptionRefcount","decrementExceptionRefcount"]
     - -sINITIAL_MEMORY=128MB
-    - -sMAXIMUM_MEMORY=4GB
+    # 4 GiB minus 64 MiB. At exactly 4 GiB the wasm32 heap size (memory.size *
+    # 64 KiB) overflows size_t to 0 and mimalloc's first allocation after the
+    # cap spins forever instead of failing (verified in the build image: a
+    # post-cap 8 MB malloc hangs with 4GB, returns NULL with 4032MB; dlmalloc
+    # is unaffected). Keeping the cap below the 32-bit boundary makes every
+    # exhaustion path fail cleanly, which the OOM guard then reports.
+    - -sMAXIMUM_MEMORY=4032MB
     - -sUSE_FREETYPE=1
     - -sERROR_ON_UNDEFINED_SYMBOLS=0
     - --no-entry
@@ -572,6 +585,10 @@ mainBuild:
     - "-sPTHREAD_POOL_SIZE=Module['pthreadPoolSize']??navigator.hardwareConcurrency"
     - -sSHARED_MEMORY=1
     - -sENVIRONMENT=web,worker,node
+    # ── Out-of-memory guard: route OCCT's unchecked allocators through the
+    # `__wrap_` definitions in fluidcad/oom-guard.cpp (rationale there). ──
+    - -Wl,--wrap=_ZN8Standard15AllocateOptimalEm
+    - -Wl,--wrap=_ZN8Standard15AllocateAlignedEmm
 
 # Hand-written wrappers for OCCT overloads the generator cannot bind (see the
 # file for the contract); paths resolve relative to this file.
