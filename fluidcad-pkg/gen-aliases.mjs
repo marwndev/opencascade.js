@@ -64,8 +64,9 @@ const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const typedefs = manifest.template_typedefs ?? {};
 let dts = readFileSync(dtsPath, "utf8");
 
-// Classes actually declared in the trimmed build's .d.ts == canonicals present at runtime.
-const declared = new Set([...dts.matchAll(/^export declare class (\w+)/gm)].map((m) => m[1]));
+// Classes actually declared in the trimmed build's .d.ts == canonicals present at runtime
+// (libcascade 3.1.0 emits `declare class`, earlier builds `export declare class`).
+const declared = new Set([...dts.matchAll(/^(?:export )?declare class (\w+)/gm)].map((m) => m[1]));
 
 // Merge manifest typedefs + supplementals, then filter:
 //  - canonical must be a real class in this build
