@@ -1,7 +1,7 @@
 {
-  "name": "libcascade",
-  "version": "3.1.0",
-  "description": "OpenCascade CAD bindings for JavaScript and WebAssembly via Emscripten.",
+  "name": "ocjs-fluidcad",
+  "version": "1.8.0",
+  "description": "Custom build of OC.js for FluidCAD",
   "keywords": [
     "opencascade",
     "occt",
@@ -14,22 +14,15 @@
     "geometry",
     "3d"
   ],
-  "homepage": "https://github.com/taucad/opencascade.js#readme",
-  "bugs": {
-    "url": "https://github.com/taucad/opencascade.js/issues"
-  },
+  "homepage": "https://github.com/Fluid-CAD/FluidCAD",
   "license": "LGPL-2.1-only WITH Open-CASCADE-Exception-1.0",
-  "author": "Richard Fontein <32132657+rifont@users.noreply.github.com>",
+  "author": "Marwan Aouida",
   "contributors": [
     {
       "name": "Sebastian Alff",
       "email": "donalffons@gmail.com"
     }
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/taucad/opencascade.js.git"
-  },
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -37,60 +30,21 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
     },
-    "./wasm": "./dist/opencascade_single.wasm",
-    "./multi": {
-      "types": "./dist/variant.d.ts",
-      "default": "./dist/opencascade_multi.js"
-    },
-    "./multi/wasm": "./dist/opencascade_multi.wasm",
-    "./api-reference.json": "./dist/api-reference.json",
-    "./package.json": "./package.json",
-    "./init": {
-      "types": "./dist/init.d.ts",
-      "default": "./dist/init.js"
-    },
-    "./single": {
-      "types": "./dist/variant.d.ts",
-      "default": "./dist/opencascade_single.js"
-    },
-    "./single/wasm": "./dist/opencascade_single.wasm",
-    "./single/init": {
-      "types": "./dist/init.single.d.ts",
-      "default": "./dist/init.single.js"
-    },
-    "./multi/init": {
-      "types": "./dist/init.multi.d.ts",
-      "default": "./dist/init.multi.js"
-    }
+    "./wasm": "./dist/opencascade.fluidcad.multi-threaded.wasm"
   },
   "files": [
-    "dist/types.d.ts",
-    "dist/init.js",
-    "dist/init.d.ts",
-    "dist/variant.d.ts",
     "dist/index.js",
     "dist/index.d.ts",
-    "dist/init.single.js",
-    "dist/init.single.d.ts",
-    "dist/init.multi.js",
-    "dist/init.multi.d.ts",
-    "dist/opencascade_single.js",
-    "dist/opencascade_single.wasm",
-    "dist/opencascade_multi.js",
-    "dist/opencascade_multi.wasm",
-    "dist/opencascade_single.js.symbols",
-    "dist/opencascade_single.build-manifest.json",
-    "dist/opencascade_single.provenance.json",
-    "dist/opencascade_multi.js.symbols",
-    "dist/opencascade_multi.build-manifest.json",
-    "dist/opencascade_multi.provenance.json",
-    "dist/api-reference.json",
-    "CHANGELOG.md",
-    "BREAKING_CHANGES.md",
-    "LICENSE",
-    "LICENSE.OCCT-Exception"
+    "dist/aliases.generated.js",
+    "dist/aliases.generated.json",
+    "dist/opencascade.fluidcad.multi-threaded.js",
+    "dist/opencascade.fluidcad.multi-threaded.wasm",
+    "dist/opencascade.fluidcad.multi-threaded.d.ts",
+    "dist/opencascade.fluidcad.multi-threaded.js.symbols",
+    "dist/opencascade.fluidcad.multi-threaded.build-manifest.json",
+    "dist/opencascade.fluidcad.multi-threaded.provenance.json"
   ],
   "engines": {
     "node": ">=22"
@@ -114,7 +68,9 @@
     "typecheck": "tsc --project tests/tsconfig.json",
     "typecheck:toolchain": "tsc --project packages/toolchain/tsconfig.json",
     "lint": "eslint --config eslint.config.mjs .",
-    "lint:fix": "eslint --config eslint.config.mjs --fix ."
+    "lint:fix": "eslint --config eslint.config.mjs --fix .",
+    "test:fluidcad-checks": "node scripts/check-fluidcad-self-interference.mjs && tsc --noEmit --skipLibCheck --module NodeNext --target ES2022 scripts/check-fluidcad-self-interference.types.ts",
+    "test:fluidcad-sweep-topology": "node scripts/check-fluidcad-sweep-topology.mjs && tsc --noEmit --skipLibCheck --module NodeNext --target ES2022 scripts/check-fluidcad-sweep-topology.types.ts"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.3.0",
