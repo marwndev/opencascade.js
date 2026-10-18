@@ -30,6 +30,12 @@ CPUS="${CPUS:-$(nproc 2>/dev/null || echo 8)}"
 [ -f "$YML" ] || { echo "Error: $YML not found (are you on the fluidcad branch?)" >&2; exit 1; }
 mkdir -p "$OUT"
 
+# class_.py is mounted for the raw_destructor fix: the image's generator emitted a
+# no-op destructor for every class using OCCT's DEFINE_STANDARD_ALLOC (its placement
+# operator delete tripped the "placement delete" rule), so .delete() never freed
+# gp_*/Bnd_*/TopoDS_Shape/NCollection_*/BRep*API_* objects. See
+# src/ocjs_bindgen/codegen/embind/class_.py (process_class, raw_destructor section).
+#
 # The libembind overload-table fix is committed as a patch (src/patches/...).
 # Re-derive the patched libembind.js from the vendored pristine snapshot and mount
 # it (equivalent to `build-wasm.sh apply-patches`, but without re-running the
@@ -60,6 +66,7 @@ docker run --rm \
   -v "$OUT:/out" \
   -v "$(pwd)/src/ocjs_bindgen/discover.py:/opencascade.js/src/ocjs_bindgen/discover.py:ro" \
   -v "$(pwd)/src/ocjs_bindgen/ast/template_args.py:/opencascade.js/src/ocjs_bindgen/ast/template_args.py:ro" \
+  -v "$(pwd)/src/ocjs_bindgen/codegen/embind/class_.py:/opencascade.js/src/ocjs_bindgen/codegen/embind/class_.py:ro" \
   -v "$(pwd)/bindgen-filters.yaml:/opencascade.js/bindgen-filters.yaml:ro" \
   -v "$(pwd)/$YML:/opencascade.js/$YML:ro" \
   -v "$(pwd)/fluidcad-pkg:/pkg:ro" \

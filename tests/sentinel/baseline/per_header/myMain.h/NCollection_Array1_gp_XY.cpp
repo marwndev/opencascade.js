@@ -5552,4 +5552,3 @@ using NCollection_Sequence_int = NCollection_Sequence<int>;EMSCRIPTEN_BINDINGS(N
   ;
 }
 
-namespace emscripten { namespace internal { template<> void raw_destructor<NCollection_Array1_gp_XY>(NCollection_Array1_gp_XY* ptr) { /* do nothing */ } } }

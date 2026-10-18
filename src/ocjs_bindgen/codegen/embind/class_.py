@@ -152,9 +152,37 @@ def process_class(b, theClass, templateDecl=None, templateArgs=None):
 
   output += "}\n\n"
 
-  nonPublicDestructor = any(x.kind == clang.cindex.CursorKind.DESTRUCTOR and not x.access_specifier == clang.cindex.AccessSpecifier.PUBLIC for x in theClass.get_children())
-  placementDelete = next((x for x in theClass.get_children() if x.spelling == "operator delete" and len(list(x.get_arguments())) == 2), None) is not None
-  if nonPublicDestructor or placementDelete:
+  # Embind's generic `raw_destructor<T>` is `delete ptr;` and is what JS
+  # `.delete()` runs. Specialise it to a no-op ONLY when `delete ptr` cannot
+  # compile: a non-public or deleted destructor, or a class whose only
+  # class-scope `operator delete` is a placement form (a class-scope
+  # placement delete hides the global usual one, so the delete-expression has
+  # no deallocation function to call).
+  #
+  # The previous rule made *any* 2-argument `operator delete` trigger the
+  # no-op. OCCT's DEFINE_STANDARD_ALLOC macro (Standard_DefineAlloc.hxx, used by
+  # ~2200 headers: gp_*, Bnd_*, TopLoc_Location, TopoDS_Shape, NCollection_*,
+  # BRep*API_* ...) declares a placement `operator delete(void*, void*)` next
+  # to the usual `operator delete(void*)`, so every such class was registered
+  # with a destructor that did nothing: `.delete()` released the JS handle but
+  # never destroyed or freed the C++ object (gp_Trsf leaked ~110 B per
+  # instance, an NCollection_Array1<double> leaked its whole buffer).
+  children = list(theClass.get_children())
+  destructors = [x for x in children if x.kind == clang.cindex.CursorKind.DESTRUCTOR]
+  nonPublicDestructor = any(x.access_specifier != clang.cindex.AccessSpecifier.PUBLIC for x in destructors)
+  deletedDestructor = any(x.is_deleted_method() for x in destructors)
+  _SIZE_T_SPELLINGS = ("size_t", "std::size_t", "unsigned long", "unsigned int", "unsigned long long")
+  placementDelete = False
+  usualDelete = False
+  for x in children:
+    if x.spelling != "operator delete":
+      continue
+    args = list(x.get_arguments())
+    if len(args) == 1 or (len(args) == 2 and args[1].type.get_canonical().spelling in _SIZE_T_SPELLINGS):
+      usualDelete = True   # `operator delete(void*)` / sized `operator delete(void*, size_t)`
+    elif len(args) == 2:
+      placementDelete = True   # `operator delete(void*, void*)` (placement form)
+  if nonPublicDestructor or deletedDestructor or (placementDelete and not usualDelete):
     output += "namespace emscripten { namespace internal { template<> void raw_destructor<" + classCpp + ">(" + classCpp + "* ptr) { /* do nothing */ } } }\n"
   return output
 

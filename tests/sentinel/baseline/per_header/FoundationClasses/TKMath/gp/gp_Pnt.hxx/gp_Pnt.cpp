@@ -5595,4 +5595,3 @@ EMSCRIPTEN_BINDINGS(gp_Pnt) {
   ;
 }
 
-namespace emscripten { namespace internal { template<> void raw_destructor<gp_Pnt>(gp_Pnt* ptr) { /* do nothing */ } } }

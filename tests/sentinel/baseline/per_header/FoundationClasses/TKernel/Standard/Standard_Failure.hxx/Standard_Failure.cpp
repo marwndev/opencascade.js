@@ -5558,4 +5558,3 @@ using NCollection_Sequence_int = NCollection_Sequence<int>;EMSCRIPTEN_BINDINGS(S
   ;
 }
 
-namespace emscripten { namespace internal { template<> void raw_destructor<Standard_Failure>(Standard_Failure* ptr) { /* do nothing */ } } }

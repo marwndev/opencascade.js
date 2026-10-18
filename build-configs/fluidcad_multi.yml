@@ -502,6 +502,107 @@ mainBuild:
     - symbol: BRep_ToolExt            # hand-written wrapper, see additionalCppCode below
     - symbol: ShapeCustomExt          # hand-written wrapper, see additionalCppCode below
 
+    # ==========================================
+    # Gear library (FluidCAD-Custom): exact-equation B-rep construction
+    # ==========================================
+    # Curve / surface fitting through points sampled from the exact tooth
+    # equations (involute, trochoid, spherical involute, helicoid).
+    - symbol: GeomAPI_Interpolate
+    - symbol: GeomAPI_PointsToBSpline
+    - symbol: GeomAPI_PointsToBSplineSurface
+    - symbol: Approx_ParametrizationType          # enum (PointsToBSpline / PointsToBSplineSurface)
+    - symbol: GeomConvert_CompCurveToBSplineCurve
+    - symbol: Geom2dConvert_CompCurveToBSplineCurve
+    - symbol: Convert_ParameterisationType        # enum (CompCurveToBSplineCurve)
+    - symbol: GeomLib
+    # Surfaces (bevel back cones / spherical involutes, revolved and extruded profiles).
+    - symbol: Geom_SphericalSurface
+    - symbol: Geom_ToroidalSurface
+    - symbol: Geom_SweptSurface                   # base of the two below
+    - symbol: Geom_SurfaceOfRevolution
+    - symbol: Geom_SurfaceOfLinearExtrusion
+    # Primitives and topology builders.
+    - symbol: BRepPrimAPI_MakeCone
+    - symbol: BRepPrimAPI_MakeTorus
+    - symbol: BRepPrimAPI_MakeBox
+    - symbol: BRepBuilderAPI_MakeSolid
+    - symbol: BRepBuilderAPI_MakePolygon
+    - symbol: BRepBuilderAPI_MakeShell
+    - symbol: BRepBuilderAPI_ShellError           # enum (MakeShell.Error)
+    - symbol: BRepOffsetAPI_MakeFilling
+    # Sweep laws for BRepOffsetAPI_MakePipeShell.SetLaw (Law_Function is above).
+    - symbol: Law_Constant
+    - symbol: Law_Linear
+    - symbol: Law_BSpFunc                         # base of Law_Interpol
+    - symbol: Law_BSpline                         # Law_BSpFunc.Curve() result
+    - symbol: Law_Interpol
+    # Repair and verification.
+    - symbol: ShapeFix_Solid
+    - symbol: ShapeFix_Shell
+    - symbol: GeomAPI_ProjectPointOnCurve
+    - symbol: GeomAPI_ProjectPointOnSurf
+    - symbol: Geom2dAPI_ProjectPointOnCurve
+    - symbol: GeomAPI_ExtremaCurveCurve
+
+  # ── Out-of-memory guard (link-time wrap of OCCT's unchecked allocator) ────────
+  # OCCT V8 in its default NATIVE memory-manager mode (USE_MMGR_TYPE=NATIVE, what
+  # the image's CMake step builds) implements `Standard::AllocateOptimal` as a bare
+  # `return malloc(theSize);` — no NULL check — while `Standard::Allocate` and
+  # `Standard::Reallocate` throw `Standard_OutOfMemory`. AllocateOptimal is the
+  # back end of `NCollection_Allocator`, i.e. every NCollection_Array1 / Vector /
+  # List / Map buffer and most of OCCT's heap traffic; `Standard::AllocateAligned`
+  # (`posix_memalign` branch) has the same gap. When the wasm heap reaches
+  # -sMAXIMUM_MEMORY, mimalloc correctly returns NULL (verified with a probe in the
+  # build image), the container keeps a null buffer, and the next SetValue() writes
+  # land at address 0 + offset: the data segment / stack / runtime tables are
+  # silently overwritten and the kernel dies later with "Maximum call stack size
+  # exceeded", "memory access out of bounds", "null function or function signature
+  # mismatch" or a hang — never with an OOM error.
+  #
+  # `-Wl,--wrap=<mangled>` (see emccFlags) redirects every reference to those two
+  # functions — from the OCCT static archives and from the Embind objects alike,
+  # all of which instantiate the inline allocator — to the `__wrap_` definitions
+  # below. They call the real function (`__real_`) and throw `Standard_OutOfMemory`
+  # on NULL, the exception OCCT itself documents for this case: it reaches JS as an
+  # ordinary OCCT `WebAssembly.Exception` (decode with `getExceptionMessage`), and
+  # when the allocation fails on a pthread worker it goes through OSD_ThreadPool's
+  # per-job failure capture and is re-thrown on the calling thread.
+  # `Standard_OutOfMemory` keeps its message in an inline buffer, so building and
+  # throwing it needs no heap.
+  #
+  # Why not the alternatives: `-sABORTING_MALLOC=1` only acts inside
+  # emscripten_resize_heap, and near the 4 GiB cap the failing request overflows the
+  # 32-bit brk pointer, so sbrk fails before any growth call and nothing aborts
+  # (verified); and patching Standard.cxx needs a full OCCT rebuild of the image,
+  # whereas the wrap only needs a relink. The mangled names are wasm32
+  # (`size_t` = `unsigned long` = `m`); check with
+  # `llvm-nm build/occt-cmake/lin32/clang/lib/libTKernel.a | grep Standard15Allocate`.
+  additionalBindCode: |
+    #include <Standard_OutOfMemory.hxx>
+    #include <cstddef>
+
+    // Standard::AllocateOptimal(const size_t)
+    void* ocjs_real_AllocateOptimal(std::size_t) __asm__("__real__ZN8Standard15AllocateOptimalEm");
+    void* ocjs_wrap_AllocateOptimal(std::size_t) __asm__("__wrap__ZN8Standard15AllocateOptimalEm");
+    void* ocjs_wrap_AllocateOptimal(std::size_t theSize) {
+      void* aPtr = ocjs_real_AllocateOptimal(theSize);
+      if (aPtr == nullptr) {
+        throw Standard_OutOfMemory("Standard::AllocateOptimal(): malloc failed - wasm heap exhausted (out of memory)");
+      }
+      return aPtr;
+    }
+
+    // Standard::AllocateAligned(const size_t, const size_t)
+    void* ocjs_real_AllocateAligned(std::size_t, std::size_t) __asm__("__real__ZN8Standard15AllocateAlignedEmm");
+    void* ocjs_wrap_AllocateAligned(std::size_t, std::size_t) __asm__("__wrap__ZN8Standard15AllocateAlignedEmm");
+    void* ocjs_wrap_AllocateAligned(std::size_t theSize, std::size_t theAlign) {
+      void* aPtr = ocjs_real_AllocateAligned(theSize, theAlign);
+      if (aPtr == nullptr) {
+        throw Standard_OutOfMemory("Standard::AllocateAligned(): aligned alloc failed - wasm heap exhausted (out of memory)");
+      }
+      return aPtr;
+    }
+
   emccFlags:
     - -fwasm-exceptions
     - -sEXPORT_EXCEPTION_HANDLING_HELPERS
@@ -510,7 +611,13 @@ mainBuild:
     - -sALLOW_MEMORY_GROWTH=1
     - -sEXPORTED_RUNTIME_METHODS=["FS","PThread"]
     - -sINITIAL_MEMORY=128MB
-    - -sMAXIMUM_MEMORY=4GB
+    # 4 GiB minus 64 MiB. At exactly 4 GiB the wasm32 heap size (memory.size *
+    # 64 KiB) overflows size_t to 0 and mimalloc's first allocation after the
+    # cap spins forever instead of failing (verified in the build image: a
+    # post-cap 8 MB malloc hangs with 4GB, returns NULL with 4032MB; dlmalloc
+    # is unaffected). Keeping the cap below the 32-bit boundary makes every
+    # exhaustion path fail cleanly, which the OOM guard below then reports.
+    - -sMAXIMUM_MEMORY=4032MB
     - -sUSE_FREETYPE=1
     - -sERROR_ON_UNDEFINED_SYMBOLS=0
     - --no-entry
@@ -529,6 +636,10 @@ mainBuild:
     - "-sPTHREAD_POOL_SIZE=Module['pthreadPoolSize']??navigator.hardwareConcurrency"
     - -sSHARED_MEMORY=1
     - -sENVIRONMENT=web,worker,node
+    # ── Out-of-memory guard: route OCCT's unchecked allocators through the
+    # `__wrap_` definitions in additionalBindCode above (rationale there). ──
+    - -Wl,--wrap=_ZN8Standard15AllocateOptimalEm
+    - -Wl,--wrap=_ZN8Standard15AllocateAlignedEmm
 
 # Hand-written wrappers for OCCT overloads the generator cannot bind. Plain C++
 # classes here get their Embind registration AND .d.ts declarations generated

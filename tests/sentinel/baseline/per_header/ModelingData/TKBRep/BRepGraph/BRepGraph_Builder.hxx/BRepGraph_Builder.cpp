@@ -5547,4 +5547,3 @@ using NCollection_Sequence_int = NCollection_Sequence<int>;EMSCRIPTEN_BINDINGS(B
   ;
 }
 
-namespace emscripten { namespace internal { template<> void raw_destructor<BRepGraph_Builder>(BRepGraph_Builder* ptr) { /* do nothing */ } } }
